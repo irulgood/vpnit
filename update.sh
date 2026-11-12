@@ -35,9 +35,19 @@ mkdir -p "$TEMP_DIR/backup_db"
 [ -d /usr/sbin/potatonc/slowdns ] && cp -a /usr/sbin/potatonc/slowdns "$TEMP_DIR/backup_db/"
 [ -d /usr/sbin/potatonc/cert ] && cp -a /usr/sbin/potatonc/cert "$TEMP_DIR/backup_db/"
 
+# Amankan binary original this.data jika belum dibackup
+if [ -f /usr/sbin/this.data ] && [ ! -f /usr/sbin/this.data.orig ]; then
+  # Cek apakah this.data di server adalah binary ELF asli Potato
+  if file /usr/sbin/this.data | grep -q 'ELF'; then
+    cp -a /usr/sbin/this.data /usr/sbin/this.data.orig
+  fi
+fi
+
 # Update binaries & scripts
 SRC_DIR="$TEMP_DIR/extracted"
 if [ -d "$SRC_DIR/bin" ]; then
+  # Hapus file this.data lama terlebih dahulu agar tidak terkena error "Text file busy"
+  rm -f /usr/sbin/this.data 2>/dev/null || true
   cp -a "$SRC_DIR/bin/"* /usr/sbin/ 2>/dev/null || true
   chmod +x /usr/sbin/* 2>/dev/null || true
   ln -sf /usr/sbin/menu /usr/bin/menu 2>/dev/null || true
@@ -171,6 +181,11 @@ fi
 if [ -d "$TEMP_DIR/backup_db/cert" ]; then
   cp -a "$TEMP_DIR/backup_db/cert" /usr/sbin/potatonc/
 fi
+
+# Enforce Lisensi Lifetime & Branding IRULTUN di SQLite dan cache auth
+sqlite3 /usr/sbin/potatonc/potato.db "UPDATE servers SET order_by='irultun', status='Lifetime';" 2>/dev/null || true
+echo "Lifetime" > /root/.authpotato 2>/dev/null || true
+echo "Lifetime" > /usr/sbin/potatonc/.authpotato 2>/dev/null || true
 
 # Bersihkan MASQUERADE liar jika ada dan pastikan port forwarding iptables SlowDNS (53 -> 5300) tetap aktif
 iptables -t nat -D POSTROUTING -j MASQUERADE 2>/dev/null || true

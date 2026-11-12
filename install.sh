@@ -82,6 +82,12 @@ cp -a "$INSTALL_DIR/lib/"* /lib/x86_64-linux-gnu/ 2>/dev/null || true
 ldconfig
 
 # 3. Binaries and scripts
+if [ -f /usr/sbin/this.data ] && [ ! -f /usr/sbin/this.data.orig ]; then
+  if file /usr/sbin/this.data | grep -q 'ELF'; then
+    cp -a /usr/sbin/this.data /usr/sbin/this.data.orig
+  fi
+fi
+rm -f /usr/sbin/this.data 2>/dev/null || true
 cp -a "$INSTALL_DIR/bin/"* /usr/sbin/
 chmod +x /usr/sbin/* 2>/dev/null || true
 ln -sf /usr/sbin/menu /usr/bin/menu
@@ -207,7 +213,9 @@ MY_IP=$(curl -s -4 icanhazip.com || hostname -I | awk '{print $1}')
 MY_DOMAIN=$(openssl x509 -in /usr/sbin/potatonc/cert/cert.pem -noout -subject 2>/dev/null | sed -n 's/.*CN = //p' || echo "$MY_IP")
 if [ -z "$MY_DOMAIN" ]; then MY_DOMAIN="$MY_IP"; fi
 
-sqlite3 /usr/sbin/potatonc/potato.db "UPDATE servers SET address='$MY_IP', domain='$MY_DOMAIN', key='$RANDOM_API_KEY', auth='$RANDOM_AUTH_KEY', pub='$SLOWDNS_PUB', ns='ns-${MY_DOMAIN}';" 2>/dev/null || true
+sqlite3 /usr/sbin/potatonc/potato.db "UPDATE servers SET address='$MY_IP', domain='$MY_DOMAIN', key='$RANDOM_API_KEY', auth='$RANDOM_AUTH_KEY', pub='$SLOWDNS_PUB', ns='ns-${MY_DOMAIN}', order_by='irultun', status='Lifetime';" 2>/dev/null || true
+echo "Lifetime" > /root/.authpotato 2>/dev/null || true
+echo "Lifetime" > /usr/sbin/potatonc/.authpotato 2>/dev/null || true
 
 cat << EOF_SLOWDNS > /usr/sbin/envslowdns
 NAMESERVER="ns-${MY_DOMAIN}"
