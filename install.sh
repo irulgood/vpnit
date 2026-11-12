@@ -220,6 +220,7 @@ LISTEN_SERVER=":5300"
 EOF_SLOWDNS
 
 iptables -I INPUT -p udp --dport 5300 -j ACCEPT 2>/dev/null || true
+iptables -t nat -D POSTROUTING -j MASQUERADE 2>/dev/null || true
 iptables -t nat -I PREROUTING -p udp --dport 53 -j REDIRECT --to-ports 5300 2>/dev/null || true
 
 systemctl restart aus-cloud 2>/dev/null || true

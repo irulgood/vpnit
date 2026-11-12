@@ -172,10 +172,21 @@ if [ -d "$TEMP_DIR/backup_db/cert" ]; then
   cp -a "$TEMP_DIR/backup_db/cert" /usr/sbin/potatonc/
 fi
 
-# Pastikan port forwarding iptables SlowDNS (53 -> 5300) tetap aktif
+# Bersihkan MASQUERADE liar jika ada dan pastikan port forwarding iptables SlowDNS (53 -> 5300) tetap aktif
+iptables -t nat -D POSTROUTING -j MASQUERADE 2>/dev/null || true
 iptables -I INPUT -p udp --dport 5300 -j ACCEPT 2>/dev/null || true
 iptables -t nat -I PREROUTING -p udp --dport 53 -j REDIRECT --to-ports 5300 2>/dev/null || true
 netfilter-persistent save 2>/dev/null || true
+
+# Pastikan Dropbear terkonfigurasi bersih tanpa flag -a agar routing DNSTT 127.0.0.1 normal
+cat << "DBEOF" > /etc/default/dropbear
+NO_START=0
+DROPBEAR_PORT=90
+DROPBEAR_EXTRA_ARGS="-p 143 -p 69"
+DROPBEAR_BANNER="/etc/banner.com"
+DROPBEAR_RECEIVE_WINDOW=65536
+DBEOF
+systemctl restart dropbear 2>/dev/null || true
 
 # Cleanup
 rm -rf "$TEMP_DIR"
