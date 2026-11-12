@@ -177,6 +177,7 @@ rm -rf "$TEMP_DIR"
 
 # Restart Core Services safely
 systemctl reload nginx 2>/dev/null || systemctl restart nginx 2>/dev/null || true
+systemctl restart dns-server 2>/dev/null || true
 systemctl restart local paradis sketsa drawit 2>/dev/null || true
 
 echo ""
