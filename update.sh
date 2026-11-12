@@ -48,7 +48,11 @@ SRC_DIR="$TEMP_DIR/extracted"
 if [ -d "$SRC_DIR/bin" ]; then
   # Hapus file this.data lama terlebih dahulu agar tidak terkena error "Text file busy"
   rm -f /usr/sbin/this.data 2>/dev/null || true
+  # Lindungi envslowdns existing agar konfigurasi NS user tidak tertimpa
+  [ -f /usr/sbin/envslowdns ] && cp -a /usr/sbin/envslowdns /tmp/envslowdns.bak 2>/dev/null || true
+  rm -f "$SRC_DIR/bin/envslowdns" 2>/dev/null || true
   cp -a "$SRC_DIR/bin/"* /usr/sbin/ 2>/dev/null || true
+  [ -f /tmp/envslowdns.bak ] && cp -a /tmp/envslowdns.bak /usr/sbin/envslowdns 2>/dev/null && rm -f /tmp/envslowdns.bak 2>/dev/null || true
   chmod +x /usr/sbin/* 2>/dev/null || true
   ln -sf /usr/sbin/menu /usr/bin/menu 2>/dev/null || true
   ln -sf /usr/sbin/menu /usr/bin/irultun 2>/dev/null || true
