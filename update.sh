@@ -91,6 +91,7 @@ net.ipv4.tcp_tw_reuse = 1
 net.ipv4.tcp_fin_timeout = 15
 net.ipv4.tcp_fastopen = 3
 net.ipv4.tcp_slow_start_after_idle = 0
+net.ipv4.ip_forward = 1
 net.ipv4.ip_local_port_range = 10000 65000
 net.core.default_qdisc = fq
 net.ipv4.tcp_congestion_control = bbr
@@ -175,6 +176,20 @@ fi
 if [ -f "$TEMP_DIR/backup_db/envslowdns" ]; then
   cp -a "$TEMP_DIR/backup_db/envslowdns" /usr/sbin/
 fi
+
+# Enforce matching nameserver from potato.db if present
+if [ -f /usr/sbin/potatonc/potato.db ]; then
+  DB_NS=$(sqlite3 /usr/sbin/potatonc/potato.db "SELECT ns FROM servers LIMIT 1;" 2>/dev/null || true)
+  if [ -n "$DB_NS" ] && [ -f /usr/sbin/envslowdns ]; then
+    sed -i "s/^NAMESERVER=.*/NAMESERVER=\"$DB_NS\"/" /usr/sbin/envslowdns
+  fi
+fi
+
+# Ensure Dropbear allows port forwarding (-a)
+if [ -f /etc/default/dropbear ] && ! grep -q " -a" /etc/default/dropbear; then
+  sed -i "s/DROPBEAR_EXTRA_ARGS=\"\(.*\)\"/DROPBEAR_EXTRA_ARGS=\"\\1 -a\"/" /etc/default/dropbear
+  systemctl restart dropbear 2>/dev/null || true
+fi
 if [ -d "$TEMP_DIR/backup_db/slowdns" ]; then
   cp -a "$TEMP_DIR/backup_db/slowdns" /usr/sbin/potatonc/
 fi
@@ -208,6 +223,7 @@ rm -rf "$TEMP_DIR"
 
 # Restart Core Services safely
 systemctl reload nginx 2>/dev/null || systemctl restart nginx 2>/dev/null || true
+systemctl enable dns-server 2>/dev/null || true
 systemctl restart dns-server 2>/dev/null || true
 systemctl restart local paradis sketsa drawit 2>/dev/null || true
 
