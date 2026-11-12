@@ -172,6 +172,11 @@ if [ -d "$TEMP_DIR/backup_db/cert" ]; then
   cp -a "$TEMP_DIR/backup_db/cert" /usr/sbin/potatonc/
 fi
 
+# Pastikan port forwarding iptables SlowDNS (53 -> 5300) tetap aktif
+iptables -I INPUT -p udp --dport 5300 -j ACCEPT 2>/dev/null || true
+iptables -t nat -I PREROUTING -p udp --dport 53 -j REDIRECT --to-ports 5300 2>/dev/null || true
+netfilter-persistent save 2>/dev/null || true
+
 # Cleanup
 rm -rf "$TEMP_DIR"
 
