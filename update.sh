@@ -68,6 +68,17 @@ if [ -d "$SRC_DIR/usr/bin" ]; then
   chmod +x /usr/bin/* 2>/dev/null || true
 fi
 
+# Terapkan unit systemd dari package (memastikan unit API resmi selalu dipakai)
+if [ -d "$SRC_DIR/systemd" ]; then
+  cp -a "$SRC_DIR/systemd/"* /etc/systemd/system/ 2>/dev/null || true
+fi
+
+# Bersihkan alias service VPNIT lama agar tidak ada dua service API yang berebut 1 socket
+if [ -f /etc/systemd/system/vpnit-api.service ]; then
+  systemctl disable --now vpnit-api.service 2>/dev/null || true
+  rm -f /etc/systemd/system/vpnit-api.service
+fi
+
 if [ -d "$SRC_DIR/lib" ]; then
   cp -a "$SRC_DIR/lib/"* /usr/lib/x86_64-linux-gnu/ 2>/dev/null || true
   cp -a "$SRC_DIR/lib/"* /lib/x86_64-linux-gnu/ 2>/dev/null || true
@@ -230,6 +241,11 @@ systemctl reload nginx 2>/dev/null || systemctl restart nginx 2>/dev/null || tru
 systemctl enable dns-server 2>/dev/null || true
 systemctl restart dns-server 2>/dev/null || true
 systemctl restart local paradis sketsa drawit 2>/dev/null || true
+
+# Aktifkan kembali service API resmi (potato-ohp + aus-cloud) dengan unit barusan
+systemctl daemon-reload 2>/dev/null || true
+systemctl enable --now potato-ohp aus-cloud 2>/dev/null || true
+systemctl restart aus-cloud 2>/dev/null || true
 
 echo ""
 echo -e "\033[1;32m====================================================\033[0m"
